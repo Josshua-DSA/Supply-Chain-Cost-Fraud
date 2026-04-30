@@ -7,14 +7,12 @@ Focus Objective:
 Workflow :
 Data ingestion & Integration -> Data Preprocessing & Feature Engineering -> Predictive -> Deployment -> Integration 
 
-
-Kalau mau versi yang **lebih dekat dengan struktur project kamu sekarang**, pakai ini:
-
+# Struktur Project
 ```markdown
 ## Project Structure
 
 ```text
-PROJECT TA/
+Neo Horcrux/
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
