@@ -1,0 +1,29 @@
+# Python cache
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Environment
+.venv/
+venv/
+env/
+.conda/
+*.env
+
+# Logs
+logs/
+*.log
+
+# MLflow local tracking
+mlruns/
+mlartifacts/
+
+# Model artifacts
+artifacts/model/*.pkl
+artifacts/model/*.joblib
+artifacts/preprocessing/*.pkl
+artifacts/preprocessing/*.joblib
+
+# dataset
+notebook/dataset_engineered/data_engineered.csv
+notebooks/dataset_engineered/*.parquet
