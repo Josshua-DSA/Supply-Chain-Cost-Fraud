@@ -9,9 +9,6 @@ Data ingestion & Integration -> Data Preprocessing & Feature Engineering -> Pred
 
 # Struktur Project
 ```markdown
-## Project Structure
-
-```text
 Neo Horcrux/
 ├── README.md
 ├── requirements.txt
