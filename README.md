@@ -1,6 +1,6 @@
-# Supply-Chain-Cost-Fraud
+# Supply-Chain-Analysist
 Focus Objective:
-1. Fraud Detection
+1. Supplier Selection
 2. Demand Forecasting
 3. late delivery risk
 
@@ -45,9 +45,14 @@ Neo Horcrux/
 ├── notebooks/
 │   ├── autoEDA.ipynb
 │   ├── autoRisk.ipynb
-│   ├── MLOps.ipynb
-│   ├── supply-chain-eda-project-semester-4.ipynb
+│   ├── MLOps-Risk.ipynb
+│   ├── MLOps-SupplierSelection.ipynb
+│   ├── supplychain eda.ipynb
 │   ├── dataset_engineered/
+│   │   ├── Feature-Engineering.ipynb
+│   │   └── data_engineered.csv
+│   ├── mlflow_artifacts/
+│   ├── mlruns/
 │   └── catboost_info/
 │
 ├── reports/
@@ -59,3 +64,4 @@ Neo Horcrux/
 │
 └── logs/
     └── logs.log
+
