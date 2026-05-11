@@ -1,17 +1,8 @@
-<<<<<<< HEAD
 # Supply-Chain-Analysist
 Focus Objective:
 1. Supplier Selection
 2. Demand Forecasting
 3. late delivery risk
-=======
-
-Project TA untuk analitik supply chain:
-
-1. Fraud detection
-2. Demand forecasting
-3. Late delivery risk
-4. Supplier selection
 
 Workflow utama:
 
