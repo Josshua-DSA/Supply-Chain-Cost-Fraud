@@ -65,14 +65,8 @@ dataset/engineered/*
 # =========================
 # Model Artifacts / MLflow
 # =========================
-artifacts/mlflow/
+artifacts/mlflow/*
 artifacts/logs/*
-artifacts/metrics/*
-artifacts/models/*
-
-!artifacts/logs/.gitkeep
-!artifacts/metrics/.gitkeep
-!artifacts/models/.gitkeep
 
 mlruns/
 mlartifacts/
