@@ -55,25 +55,25 @@ config.local.*
 # =========================
 # Dataset
 # =========================
-dataset/processed/*
-dataset/engineered/*
+model/dataset/processed/*
+model/dataset/engineered/*
 
-!dataset/raw/.gitkeep
-!dataset/processed/.gitkeep
-!dataset/engineered/.gitkeep
+!model/dataset/processed/.gitkeep
+!model/dataset/engineered/.gitkeep
 
 # =========================
 # Model Artifacts / MLflow
 # =========================
-artifacts/mlflow/*
-artifacts/logs/*
+model/artifacts/mlflow/*
+model/artifacts/logs/*
+!model/artifacts/mlflow/.gitkeep
+!model/artifacts/logs/.gitkeep
 
 mlruns/
 mlartifacts/
 catboost_info/
 *.pkl
 *.joblib
-*.pickle
 *.sav
 *.ubj
 *.onnx
@@ -84,12 +84,12 @@ catboost_info/
 # =========================
 # Reports / Generated Output
 # =========================
-reports/*.html
-reports/*.pdf
-reports/*.png
-reports/*.jpg
-reports/*.jpeg
-reports/*.svg
+model/reports/*.html
+model/reports/*.pdf
+model/reports/*.png
+model/reports/*.jpg
+model/reports/*.jpeg
+model/reports/*.svg
 
 # =========================
 # Logs
@@ -108,8 +108,8 @@ logs/
 *.dump
 
 # Keep SQL source files
-!database/*.sql
-!database/*.pgerd
+!app/database/*.sql
+!app/database/*.pgerd
 
 # =========================
 # Frontend
@@ -158,3 +158,5 @@ notebook/
 dataset_engineered/
 supplier_selection_outputs/
 mlflow_artifacts/
+Project-TA.txt
+
