@@ -10,3 +10,9 @@ PROCESSED_DATA_DIR = DATASET_DIR / "processed"
 ENGINEERED_DATA_DIR = DATASET_DIR / "engineered"
 ARTIFACTS_DIR = MODEL_ROOT / "artifacts"
 REPORTS_DIR = MODEL_ROOT / "reports"
+
+CHAMPION_MODEL_DIR = ARTIFACTS_DIR / "models" / "champion_model"
+CHAMPION_MODEL_PATH = CHAMPION_MODEL_DIR / "late_shipment_model.pkl"
+CHAMPION_METADATA_PATH = CHAMPION_MODEL_DIR / "metadata.json"
+
+SUPPLIER_SELECTION_OUTPUT_DIR = ARTIFACTS_DIR / "metrics" / "supplier_selection_outputs"

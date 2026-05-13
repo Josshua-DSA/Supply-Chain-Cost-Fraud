@@ -15,8 +15,13 @@ def _load_json(path: Path) -> dict[str, Any]:
 
 
 def _load_pickle(path: Path) -> Any:
-    with path.open("rb") as file:
-        return pickle.load(file)
+    try:
+        import joblib
+
+        return joblib.load(path)
+    except ImportError:
+        with path.open("rb") as file:
+            return pickle.load(file)
 
 
 @lru_cache(maxsize=1)
@@ -30,4 +35,7 @@ def load_champion_metadata() -> dict[str, Any]:
 def load_champion_model() -> Any:
     if not CHAMPION_MODEL_PATH.exists():
         return None
-    return _load_pickle(CHAMPION_MODEL_PATH)
+    try:
+        return _load_pickle(CHAMPION_MODEL_PATH)
+    except Exception:
+        return None

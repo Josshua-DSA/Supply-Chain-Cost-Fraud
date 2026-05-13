@@ -23,7 +23,8 @@ def predict_late_shipment(payload: dict) -> dict:
     model = load_champion_model()
     metadata = load_champion_metadata()
     records = normalize_records(payload)
-    features = build_late_shipment_features(records, metadata.get("features", []))
+    feature_names = metadata.get("features", [])
+    features = build_late_shipment_features(records, feature_names)
 
     if model is None:
         return {
@@ -47,12 +48,14 @@ def predict_late_shipment(payload: dict) -> dict:
                 "risk_label": "late" if risk else "on_time",
                 "late_probability": float(probability),
                 "threshold": threshold,
+                "features": features[index],
             }
         )
 
     return {
         "count": len(predictions),
         "target": metadata.get("target", "Late_delivery_risk"),
+        "feature_order": feature_names,
         "predictions": predictions,
     }
 

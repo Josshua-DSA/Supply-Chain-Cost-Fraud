@@ -23,4 +23,7 @@ def model_info():
 @risk_predict_bp.post("/predict/late-shipment")
 def predict():
     payload = request.get_json(silent=True) or {}
-    return jsonify(predict_late_shipment(payload))
+    try:
+        return jsonify(predict_late_shipment(payload))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
