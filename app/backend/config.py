@@ -20,3 +20,65 @@ CHAMPION_MODEL_PATH = Path(
 CHAMPION_METADATA_PATH = Path(
     os.getenv("CHAMPION_METADATA_PATH", CHAMPION_MODEL_DIR / "metadata.json")
 )
+<<<<<<< Updated upstream
+=======
+
+SUPPLIER_SELECTION_OUTPUT_DIR = Path(
+    os.getenv(
+        "SUPPLIER_SELECTION_OUTPUT_DIR",
+        MODEL_ROOT / "artifacts" / "metrics" / "supplier_selection_outputs",
+    )
+)
+SUPPLIER_SELECTION_FULL_RESULT_PATH = Path(
+    os.getenv(
+        "SUPPLIER_SELECTION_FULL_RESULT_PATH",
+        SUPPLIER_SELECTION_OUTPUT_DIR / "supplier_selection_by_category_full_result.csv",
+    )
+)
+SUPPLIER_SELECTION_PRIMARY_PATH = Path(
+    os.getenv(
+        "SUPPLIER_SELECTION_PRIMARY_PATH",
+        SUPPLIER_SELECTION_OUTPUT_DIR / "supplier_selection_primary_per_category.csv",
+    )
+)
+SUPPLIER_SELECTION_SUMMARY_PATH = Path(
+    os.getenv(
+        "SUPPLIER_SELECTION_SUMMARY_PATH",
+        SUPPLIER_SELECTION_OUTPUT_DIR / "supplier_selection_by_category_summary.json",
+    )
+)
+SUPPLIER_SELECTION_WEIGHTS_PATH = Path(
+    os.getenv(
+        "SUPPLIER_SELECTION_WEIGHTS_PATH",
+        SUPPLIER_SELECTION_OUTPUT_DIR / "supplier_selection_ahp_weights.csv",
+    )
+)
+
+from pydantic_settings import BaseSettings
+from typing import List
+
+
+class Settings(BaseSettings):
+    APP_NAME: str = "Neo-Horcrox Supply Chain API"
+    DEBUG: bool = False
+
+    # CORS
+    ALLOWED_ORIGINS: List[str] = ["*"]
+
+    # Artifacts paths
+    ARTIFACTS_DIR: str = "backend/artifacts"
+
+    # Logging
+    LOG_LEVEL: str = "INFO"
+
+    # MongoDB
+    MONGODB_URI: str = "mongodb://localhost:27017"
+    MONGODB_DB_NAME: str = "neo_horcrox"
+
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
+
+settings = Settings()
+>>>>>>> Stashed changes
