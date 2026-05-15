@@ -1,52 +1,42 @@
-"""Routes for demand forecasting."""
+"""FastAPI routes for demand forecasting."""
 
-from flask import Blueprint, jsonify
-
-from ..services.forecast_service import get_forecast_status
-
-
-forecast_bp = Blueprint("forecast", __name__)
-
-
-@forecast_bp.get("/health")
-def health():
-    return jsonify(get_forecast_status())
+from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, status
-from backend.schemas.forecast_supplier import ForecastInput, ForecastResponse
-from backend.services.forecast_service import predict_forecast
-from backend.core.model_registry import model_registry
 
-router = APIRouter()
+from ..schemas.forecast_schema import ForecastInput, ForecastResponse
+from ..services.forecast_service import forecast_service
 
-@router.post("/predict", response_model=ForecastResponse, summary="Prediksi demand sales harian")
-def forecast_demand(payload: ForecastInput):
-    if model_registry.forecast_model is None:
-        raise HTTPException(status_code=503, detail="Forecast model belum di-load.")
+router = APIRouter(prefix="/forecast", tags=["Forecast"])
+
+
+@router.get("/health", summary="Forecast feature health")
+def health() -> dict:
+    return forecast_service.health()
+
+
+@router.get("/categories", summary="Known forecast categories")
+def list_categories() -> dict:
+    return {"categories": forecast_service.categories()}
+
+
+@router.get("/markets", summary="Known forecast markets")
+def list_markets() -> dict:
+    return {"markets": forecast_service.markets()}
+
+
+@router.get("/metadata", summary="Forecast metadata")
+def metadata() -> dict:
+    return forecast_service.metadata()
+
+
+@router.post("/predict", response_model=ForecastResponse, summary="Predict daily demand")
+def predict(payload: ForecastInput) -> ForecastResponse:
     try:
-        return predict_forecast(payload)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/categories")
-def list_categories():
-    meta = model_registry.forecast_metadata
-    if meta is None:
-        raise HTTPException(status_code=503, detail="Forecast model belum di-load.")
-    return {"categories": meta.get("categories", [])}
-
-@router.get("/markets")
-def list_markets():
-    meta = model_registry.forecast_metadata
-    if meta is None:
-        raise HTTPException(status_code=503, detail="Forecast model belum di-load.")
-    return {"markets": meta.get("markets", [])}
-
-@router.get("/metadata")
-def forecast_metadata():
-    meta = model_registry.forecast_metadata
-    if meta is None:
-        raise HTTPException(status_code=503, detail="Forecast model belum di-load.")
-    return meta
+        return forecast_service.predict(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc

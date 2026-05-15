@@ -1,153 +1,92 @@
-"""
-schemas/db_models.py
----------------------
-Struktur dokumen MongoDB untuk setiap collection.
-Menggunakan Pydantic v2 untuk validasi saat insert/read.
-"""
+"""Pydantic models for MongoDB documents used by the backend."""
 
-from pydantic import BaseModel, Field
-from typing import Optional, List
+from __future__ import annotations
+
 from datetime import datetime
-from bson import ObjectId
+from typing import Any
 
+from pydantic import BaseModel, ConfigDict, Field
 
-# ─── Helper ──────────────────────────────────────────────────────────────────
-
-class PyObjectId(str):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return str(v)
-
-
-# ─── Collection: orders ───────────────────────────────────────────────────────
 
 class OrderDocument(BaseModel):
-    """
-    Satu dokumen di collection `orders`.
-    Mewakili satu baris dari DataCoSupplyChainDataset.
-    """
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
     order_id: int
-    order_date: Optional[datetime] = None
-    shipping_date: Optional[datetime] = None
+    order_date: datetime | None = None
+    shipping_date: datetime | None = None
 
-    # Customer
-    customer_id: int
-    customer_segment: Optional[str] = None
-    customer_city: Optional[str] = None
-    customer_state: Optional[str] = None
-    customer_country: Optional[str] = None
+    customer_id: int | None = None
+    customer_segment: str | None = None
+    customer_city: str | None = None
+    customer_state: str | None = None
+    customer_country: str | None = None
 
-    # Shipping
-    shipping_mode: Optional[str] = None
-    days_for_shipping_real: Optional[int] = None
-    days_for_shipment_scheduled: Optional[int] = None
-    delivery_status: Optional[str] = None
-    late_delivery_risk: Optional[int] = None  # 0 or 1
+    shipping_mode: str | None = None
+    days_for_shipping_real: int | None = None
+    days_for_shipment_scheduled: int | None = None
+    delivery_status: str | None = None
+    late_delivery_risk: int | None = None
 
-    # Geography
-    market: Optional[str] = None
-    order_region: Optional[str] = None
-    order_country: Optional[str] = None
-    order_city: Optional[str] = None
-    order_state: Optional[str] = None
+    market: str | None = None
+    order_region: str | None = None
+    order_country: str | None = None
+    order_city: str | None = None
+    order_state: str | None = None
 
-    # Financials
-    sales_per_customer: Optional[float] = None
-    benefit_per_order: Optional[float] = None
-    order_profit_per_order: Optional[float] = None
-    order_status: Optional[str] = None
-    type: Optional[str] = None  # transaction type
+    sales_per_customer: float | None = None
+    benefit_per_order: float | None = None
+    order_profit_per_order: float | None = None
+    order_status: str | None = None
+    type: str | None = None
 
-    # Product
-    product_card_id: Optional[int] = None
-    product_name: Optional[str] = None
-    product_price: Optional[float] = None
-    product_status: Optional[int] = None
-    category_id: Optional[int] = None
-    category_name: Optional[str] = None
-    department_id: Optional[int] = None
-    department_name: Optional[str] = None
+    product_card_id: int | None = None
+    product_name: str | None = None
+    product_price: float | None = None
+    product_status: int | None = None
+    category_id: int | None = None
+    category_name: str | None = None
+    department_id: int | None = None
+    department_name: str | None = None
 
-    # Store geo
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
+    latitude: float | None = None
+    longitude: float | None = None
 
-    # Engineered features (opsional, bisa di-populate setelah feature engineering)
-    actual_delay: Optional[float] = None
-    shipping_speed_ratio: Optional[float] = None
-    has_price_inconsistency: Optional[int] = None
-    country_mismatch: Optional[int] = None
-    state_mismatch: Optional[int] = None
-    city_mismatch: Optional[int] = None
-
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-
-
-# ─── Collection: order_items ──────────────────────────────────────────────────
 
 class OrderItemDocument(BaseModel):
-    """
-    Satu dokumen di collection `order_items`.
-    Relasi ke orders via order_id.
-    """
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
     order_item_id: int
     order_id: int
-    product_card_id: Optional[int] = None
-    order_item_cardprod_id: Optional[int] = None
-    order_item_quantity: Optional[int] = None
-    order_item_product_price: Optional[float] = None
-    order_item_discount: Optional[float] = None
-    order_item_discount_rate: Optional[float] = None
-    order_item_profit_ratio: Optional[float] = None
-    sales: Optional[float] = None
-    order_item_total: Optional[float] = None
+    product_card_id: int | None = None
+    order_item_cardprod_id: int | None = None
+    order_item_quantity: int | None = None
+    order_item_product_price: float | None = None
+    order_item_discount: float | None = None
+    order_item_discount_rate: float | None = None
+    order_item_profit_ratio: float | None = None
+    sales: float | None = None
+    order_item_total: float | None = None
 
-    # Engineered
-    calculated_item_total: Optional[float] = None
-    item_total_gap: Optional[float] = None
-    abs_item_total_gap: Optional[float] = None
-
-    class Config:
-        populate_by_name = True
-
-
-# ─── Collection: predictions ──────────────────────────────────────────────────
 
 class PredictionLogDocument(BaseModel):
-    """
-    Log setiap kali endpoint /risk/predict dipanggil.
-    Berguna untuk monitoring model drift.
-    """
-    order_id: Optional[int] = None           # referensi ke orders (jika ada)
-    prediction: int                           # 0 or 1
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    order_id: int | None = None
+    prediction: int
     probability_late: float
     probability_on_time: float
     label: str
     model_version: str
-    input_snapshot: dict                      # raw input yang dikirim
+    input_snapshot: dict[str, Any]
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    class Config:
-        populate_by_name = True
-
-
-# ─── Collection: forecast_logs ────────────────────────────────────────────────
 
 class ForecastLogDocument(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
     category_name: str
     market: str
     periods: int
-    forecast_result: List[dict]
+    forecast_result: list[dict[str, Any]]
     model_version: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    class Config:
-        populate_by_name = True

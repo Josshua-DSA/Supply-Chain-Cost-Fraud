@@ -7,8 +7,53 @@
     <link rel="stylesheet" href="/src/css/main.css" />
   </head>
   <body>
-    <main class="app-shell">
-      <h1>Supplier Selection</h1>
+    <main class="app-shell app-shell-wide">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Supplier Selection</p>
+          <h1>Ranking Produk dan Supplier</h1>
+        </div>
+        <a class="link-button" href="/">Home</a>
+      </header>
+
+      <section class="toolbar">
+        <p data-status>Memuat data...</p>
+      </section>
+
+      <section class="split-layout">
+        <aside class="panel">
+          <h2>Kategori</h2>
+          <div class="category-list" data-category-list></div>
+        </aside>
+
+        <section class="panel table-panel">
+          <h2>Kandidat Terbaik</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Nama</th>
+                  <th>Rekomendasi</th>
+                  <th>Risk</th>
+                  <th>TOPSIS</th>
+                  <th>Late</th>
+                  <th>Sales</th>
+                </tr>
+              </thead>
+              <tbody data-product-table>
+                <tr><td colspan="7">Memuat data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel" data-product-detail>
+        <p class="muted">Detail kandidat</p>
+      </section>
     </main>
+
+    <script type="module" src="/src/js/main.js"></script>
   </body>
 </html>

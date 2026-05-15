@@ -7,8 +7,60 @@
     <link rel="stylesheet" href="/src/css/main.css" />
   </head>
   <body>
-    <main class="app-shell">
-      <h1>Dashboard</h1>
+    <main class="app-shell app-shell-wide">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Dashboard</p>
+          <h1>Supply Chain Analytics</h1>
+        </div>
+        <a class="link-button" href="/">Home</a>
+      </header>
+
+      <section class="toolbar">
+        <p data-status>Memuat data...</p>
+      </section>
+
+      <section class="metric-grid" data-dashboard-summary></section>
+
+      <section class="dashboard-grid">
+        <article class="panel table-panel">
+          <h2>Risk by Market</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Market</th><th>Orders</th><th>Late</th><th>Rate</th></tr>
+              </thead>
+              <tbody data-risk-by-market></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel table-panel">
+          <h2>Sales by Category</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Category</th><th>Sales</th><th>Orders</th></tr>
+              </thead>
+              <tbody data-sales-by-category></tbody>
+            </table>
+          </div>
+        </article>
+
+        <article class="panel table-panel dashboard-wide">
+          <h2>Shipping Performance</h2>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>Mode</th><th>Orders</th><th>Late Rate</th><th>Avg Days</th></tr>
+              </thead>
+              <tbody data-shipping-performance></tbody>
+            </table>
+          </div>
+        </article>
+      </section>
     </main>
+
+    <script type="module" src="/src/js/main.js"></script>
   </body>
 </html>

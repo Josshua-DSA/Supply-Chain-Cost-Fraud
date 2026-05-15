@@ -1,130 +1,173 @@
-"""Business logic for late-shipment risk prediction."""
+"""Business service for production late-delivery risk prediction."""
 
 from __future__ import annotations
 
-import pandas as pd
-
-from ..model_loader import load_champion_metadata, load_champion_model
-from ..schemas.risk_predict_schema import normalize_records
-from ..utils.helpers import build_late_shipment_features
-
-
-def get_model_info() -> dict:
-    metadata = load_champion_metadata()
-    model = load_champion_model()
-    return {
-        "model_loaded": model is not None,
-        "metadata_loaded": bool(metadata),
-        "metadata": metadata,
-    }
-
-
-def predict_late_shipment(payload: dict) -> dict:
-    model = load_champion_model()
-    metadata = load_champion_metadata()
-    records = normalize_records(payload)
-    features = build_late_shipment_features(records, metadata.get("features", []))
-
-    if model is None:
-        return {
-            "count": len(records),
-            "target": metadata.get("target", "Late_delivery_risk"),
-            "predictions": [],
-            "warning": "Champion model file was not found or could not be loaded.",
-        }
-
-    frame = pd.DataFrame(features)
-    probabilities = _predict_probability(model, frame)
-    threshold = float(metadata.get("threshold", 0.5))
-
-    predictions = []
-    for index, probability in enumerate(probabilities):
-        risk = int(probability >= threshold)
-        predictions.append(
-            {
-                "index": index,
-                "late_delivery_risk": risk,
-                "risk_label": "late" if risk else "on_time",
-                "late_probability": float(probability),
-                "threshold": threshold,
-            }
-        )
-
-    return {
-        "count": len(predictions),
-        "target": metadata.get("target", "Late_delivery_risk"),
-        "predictions": predictions,
-    }
-
-
-def _predict_probability(model, frame: pd.DataFrame):
-    if hasattr(model, "predict_proba"):
-        return model.predict_proba(frame)[:, 1]
-    predictions = model.predict(frame)
-    return [float(value) for value in predictions]
-
-"""
-services/prediction.py
------------------------
-Wraps model inference logic.
-Keeps routers thin — all ML logic lives here.
-"""
+from typing import Any
 
 import pandas as pd
-import numpy as np
-import logging
 
-from backend.core.model_registry import model_registry
-from backend.services.preprocessing import preprocess_for_risk
-from backend.schemas.risk import RiskInput, RiskResponse, BatchRiskResponse
-
-logger = logging.getLogger(__name__)
-
-MODEL_NOT_READY_MSG = (
-    "Risk model artifact not loaded. "
-    "Please train the model in the notebook and export artifacts first."
+from ..core.model_registry import model_registry
+from ..schemas.risk_predict_schema import (
+    RiskModelInfo,
+    RiskPredictionItem,
+    RiskPredictionResponse,
+    normalize_records,
 )
 
 
-def _input_to_df(order: RiskInput) -> pd.DataFrame:
-    """Convert a single RiskInput to a one-row DataFrame using original column names."""
-    data = order.dict(by_alias=True)
-    return pd.DataFrame([data])
+class RiskPredictionService:
+    """Runs inference against the production champion model."""
+
+    def get_model_info(self) -> RiskModelInfo:
+        metadata = model_registry.champion_metadata or {}
+        return RiskModelInfo(
+            model_loaded=model_registry.champion_model is not None,
+            metadata_loaded=bool(metadata),
+            target=metadata.get("target", "Late_delivery_risk"),
+            threshold=float(metadata.get("threshold", 0.5)),
+            features=list(metadata.get("features", [])),
+            metadata=metadata,
+        )
+
+    def predict(self, payload: dict[str, Any]) -> RiskPredictionResponse:
+        model = model_registry.champion_model
+        if model is None:
+            raise RuntimeError("Production champion risk model is not loaded.")
+
+        metadata = model_registry.champion_metadata or {}
+        feature_names = list(metadata.get("features", []))
+        if not feature_names:
+            raise RuntimeError("Production champion metadata has no feature list.")
+
+        records = normalize_records(payload)
+        rows = [self._build_feature_row(record, feature_names) for record in records]
+        missing = self._missing_required_values(rows, feature_names)
+        if missing:
+            raise ValueError(f"Missing required risk feature(s): {', '.join(missing)}")
+
+        frame = pd.DataFrame(rows, columns=feature_names)
+        probabilities = self._predict_late_probability(model, frame)
+        threshold = float(metadata.get("threshold", 0.5))
+
+        predictions: list[RiskPredictionItem] = []
+        for index, probability in enumerate(probabilities):
+            late_probability = float(probability)
+            risk = int(late_probability >= threshold)
+            predictions.append(
+                RiskPredictionItem(
+                    index=index,
+                    late_delivery_risk=risk,
+                    risk_label="late" if risk else "on_time",
+                    late_probability=late_probability,
+                    on_time_probability=float(1.0 - late_probability),
+                    threshold=threshold,
+                )
+            )
+
+        return RiskPredictionResponse(
+            count=len(predictions),
+            target=metadata.get("target", "Late_delivery_risk"),
+            model_name=metadata.get("model_name") or metadata.get("alias"),
+            model_version=metadata.get("version"),
+            predictions=predictions,
+        )
+
+    def _build_feature_row(self, record: dict[str, Any], feature_names: list[str]) -> dict[str, Any]:
+        row = dict(record)
+        self._normalize_aliases(row)
+        self._add_order_date_features(row)
+        self._add_shipping_mode_features(row)
+
+        return {
+            feature: self._coerce_feature_value(feature, row.get(feature))
+            for feature in feature_names
+        }
+
+    def _normalize_aliases(self, row: dict[str, Any]) -> None:
+        aliases = {
+            "Latitude": ["latitude", "lat"],
+            "Longitude": ["longitude", "lng", "lon"],
+            "Shipping Mode": ["shipping_mode", "shippingMode"],
+            "scheduled_days": [
+                "Days for shipment (scheduled)",
+                "days_for_shipment_scheduled",
+                "scheduled_shipping_days",
+            ],
+        }
+        for canonical, candidates in aliases.items():
+            if row.get(canonical) not in (None, ""):
+                continue
+            for candidate in candidates:
+                if row.get(candidate) not in (None, ""):
+                    row[canonical] = row[candidate]
+                    break
+
+    def _add_order_date_features(self, row: dict[str, Any]) -> None:
+        raw_date = (
+            row.get("order_date")
+            or row.get("order date (DateOrders)")
+            or row.get("orderDate")
+            or row.get("order_datetime")
+        )
+        if raw_date in (None, ""):
+            return
+
+        order_date = pd.to_datetime(raw_date, errors="coerce")
+        if pd.isna(order_date):
+            return
+
+        row.setdefault("order_day", int(order_date.day))
+        row.setdefault("order_dayofweek", int(order_date.dayofweek))
+        row.setdefault("order_hour", int(order_date.hour))
+        row.setdefault("order_is_weekend", int(order_date.dayofweek >= 5))
+
+    def _add_shipping_mode_features(self, row: dict[str, Any]) -> None:
+        mode = str(row.get("Shipping Mode", "")).strip().lower()
+        if not mode:
+            return
+
+        row.setdefault("is_fast_shipping", int(mode in {"same day", "first class"}))
+        row.setdefault("is_standard_shipping", int(mode == "standard class"))
+
+    def _coerce_feature_value(self, feature: str, value: Any) -> Any:
+        if value in ("", None):
+            return None
+        if feature == "Shipping Mode":
+            return str(value)
+        numeric = pd.to_numeric(value, errors="coerce")
+        if pd.isna(numeric):
+            return value
+        if feature.startswith("is_") or feature in {"order_day", "order_dayofweek", "order_hour", "order_is_weekend"}:
+            return int(numeric)
+        return float(numeric)
+
+    def _missing_required_values(self, rows: list[dict[str, Any]], feature_names: list[str]) -> list[str]:
+        missing: set[str] = set()
+        for row in rows:
+            for feature in feature_names:
+                if row.get(feature) is None:
+                    missing.add(feature)
+        return sorted(missing)
+
+    def _predict_late_probability(self, model: Any, frame: pd.DataFrame) -> list[float]:
+        if hasattr(model, "predict_proba"):
+            probabilities = model.predict_proba(frame)
+            if hasattr(probabilities, "__getitem__"):
+                try:
+                    return [float(value) for value in probabilities[:, 1]]
+                except (TypeError, IndexError):
+                    return [float(row[1]) for row in probabilities]
+
+        predictions = model.predict(frame)
+        return [float(value) for value in predictions]
 
 
-def predict_single(order: RiskInput) -> RiskResponse:
-    model  = model_registry.risk_model
-    scaler = model_registry.risk_scaler
-    freq_maps = model_registry.risk_freq_maps
-    features  = model_registry.risk_features
-
-    if model is None:
-        raise RuntimeError(MODEL_NOT_READY_MSG)
-
-    df = _input_to_df(order)
-    X  = preprocess_for_risk(df, scaler, freq_maps or {}, features or list(df.columns))
-
-    pred = int(model.predict(X)[0])
-    proba = model.predict_proba(X)[0]  # [p_on_time, p_late]
-
-    p_late    = float(proba[1])
-    p_on_time = float(proba[0])
-
-    return RiskResponse(
-        prediction=pred,
-        probability_late=round(p_late, 4),
-        probability_on_time=round(p_on_time, 4),
-        label="Late Delivery Risk" if pred == 1 else "On Time",
-    )
+risk_prediction_service = RiskPredictionService()
 
 
-def predict_batch(orders: list[RiskInput]) -> BatchRiskResponse:
-    results = [predict_single(o) for o in orders]
-    late_count    = sum(1 for r in results if r.prediction == 1)
-    on_time_count = len(results) - late_count
-    return BatchRiskResponse(
-        results=results,
-        total=len(results),
-        late_count=late_count,
-        on_time_count=on_time_count,
-    )
+def get_model_info() -> dict[str, Any]:
+    return risk_prediction_service.get_model_info().model_dump()
+
+
+def predict_late_shipment(payload: dict[str, Any]) -> dict[str, Any]:
+    return risk_prediction_service.predict(payload).model_dump()
