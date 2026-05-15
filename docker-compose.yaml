@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+
+  mongo:
+    image: mongo:7.0
+    container_name: neo_horcrox_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: neo_horcrox
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: neo_horcrox_api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/artifacts:/app/backend/artifacts:ro
+    environment:
+      - DEBUG=false
+      - ARTIFACTS_DIR=backend/artifacts
+      - LOG_LEVEL=INFO
+      - MONGODB_URI=mongodb://mongo:27017
+      - MONGODB_DB_NAME=neo_horcrox
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mongo_data:
